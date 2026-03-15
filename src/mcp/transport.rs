@@ -3,6 +3,9 @@ use reqwest::Client;
 
 use super::types::JsonRpcRequest;
 
+/// Maximum response body size (50 MB). Protects against OOM from oversized MCP responses.
+const MAX_RESPONSE_BYTES: usize = 50 * 1024 * 1024;
+
 /// Parsed response from the MCP server — handles both JSON and SSE responses.
 pub struct McpResponse {
     pub body: serde_json::Value,
@@ -50,7 +53,8 @@ pub async fn send_request(
 
     let status = response.status();
     if !status.is_success() {
-        let body = response.text().await.unwrap_or_default();
+        let bytes = read_bounded(response).await.unwrap_or_default();
+        let body = String::from_utf8_lossy(&bytes);
         bail!(
             "MCP server returned HTTP {}: {}",
             status.as_u16(),
@@ -58,23 +62,52 @@ pub async fn send_request(
         );
     }
 
+    let bytes = read_bounded(response).await?;
+
     if content_type.contains("text/event-stream") {
-        let text = response.text().await.context("Failed to read SSE body")?;
+        let text = String::from_utf8(bytes).context("SSE body is not valid UTF-8")?;
         let body = parse_sse(&text)?;
         Ok(McpResponse {
             body,
             session_id: new_session_id,
         })
     } else {
-        let body: serde_json::Value = response
-            .json()
-            .await
-            .context("Failed to parse JSON response")?;
+        let body: serde_json::Value =
+            serde_json::from_slice(&bytes).context("Failed to parse JSON response")?;
         Ok(McpResponse {
             body,
             session_id: new_session_id,
         })
     }
+}
+
+/// Read a response body with a size cap to prevent OOM from oversized responses.
+async fn read_bounded(response: reqwest::Response) -> Result<Vec<u8>> {
+    // Check Content-Length header first for a fast reject
+    if let Some(len) = response.content_length() {
+        if len as usize > MAX_RESPONSE_BYTES {
+            bail!(
+                "Response too large: {} bytes (limit: {} bytes)",
+                len,
+                MAX_RESPONSE_BYTES
+            );
+        }
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .context("Failed to read response body")?;
+
+    if bytes.len() > MAX_RESPONSE_BYTES {
+        bail!(
+            "Response too large: {} bytes (limit: {} bytes)",
+            bytes.len(),
+            MAX_RESPONSE_BYTES
+        );
+    }
+
+    Ok(bytes.to_vec())
 }
 
 /// Parse an SSE stream body, extracting the last JSON-RPC message from `data:` lines.
