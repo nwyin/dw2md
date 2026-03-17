@@ -212,9 +212,9 @@ fn write_output(output: &str, path: Option<&str>, quiet: bool) -> Result<()> {
                 let canon_parent = if parent.as_os_str().is_empty() {
                     std::env::current_dir().context("Failed to get current directory")?
                 } else {
-                    parent
-                        .canonicalize()
-                        .with_context(|| format!("Failed to resolve parent directory of {}", path))?
+                    parent.canonicalize().with_context(|| {
+                        format!("Failed to resolve parent directory of {}", path)
+                    })?
                 };
                 canon_parent.join(target.file_name().unwrap_or_default())
             } else {

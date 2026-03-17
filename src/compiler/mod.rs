@@ -76,7 +76,10 @@ pub async fn fetch_wiki(config: &CompileConfig) -> Result<Vec<Page>> {
     if unmatched > 0 && config.verbose {
         for page in &pages {
             if page.content.is_none() {
-                eprintln!("[dw2md] Warning: No content matched for '{}'", sanitize_for_terminal(&page.title));
+                eprintln!(
+                    "[dw2md] Warning: No content matched for '{}'",
+                    sanitize_for_terminal(&page.title)
+                );
             }
         }
     }
@@ -206,7 +209,11 @@ async fn fetch_and_merge_contents(
             content_pages.len()
         );
         for (title, content) in &content_pages {
-            eprintln!("  - \"{}\" ({} bytes)", sanitize_for_terminal(title), content.len());
+            eprintln!(
+                "  - \"{}\" ({} bytes)",
+                sanitize_for_terminal(title),
+                content.len()
+            );
         }
     }
 

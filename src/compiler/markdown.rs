@@ -434,18 +434,27 @@ mod tests {
     fn test_escape_preserves_trailing_newline() {
         let with_newline = "line\n<<< SECTION: X >>>\n";
         let escaped = super::escape_section_delimiters(with_newline);
-        assert!(escaped.ends_with('\n'), "trailing newline must be preserved");
+        assert!(
+            escaped.ends_with('\n'),
+            "trailing newline must be preserved"
+        );
 
         let without_newline = "line\n<<< SECTION: X >>>";
         let escaped2 = super::escape_section_delimiters(without_newline);
-        assert!(!escaped2.ends_with('\n'), "no trailing newline when input lacks one");
+        assert!(
+            !escaped2.ends_with('\n'),
+            "no trailing newline when input lacks one"
+        );
     }
 
     #[test]
     fn test_escape_no_false_positives() {
         let input = "normal content\nno delimiters here\n";
         let escaped = super::escape_section_delimiters(input);
-        assert_eq!(escaped, input, "content without delimiters must be unchanged");
+        assert_eq!(
+            escaped, input,
+            "content without delimiters must be unchanged"
+        );
     }
 
     #[test]

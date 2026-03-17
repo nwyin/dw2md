@@ -180,10 +180,7 @@ impl McpClient {
                     );
                 }
                 None => {
-                    bail!(
-                        "JSON-RPC response missing id (expected {})",
-                        expected
-                    );
+                    bail!("JSON-RPC response missing id (expected {})", expected);
                 }
                 _ => {}
             }
