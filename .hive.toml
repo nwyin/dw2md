@@ -1,0 +1,6 @@
+[project]
+name = "dw2md"
+
+[hive]
+backend = "claude"
+merge_queue_enabled = false
