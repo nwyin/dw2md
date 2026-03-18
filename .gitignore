@@ -7,3 +7,5 @@
 
 # cargo-mutants output
 mutants.out*
+
+.DS_Store
